@@ -56,7 +56,7 @@ export class GameController extends Component {
 
     private positonX: Vec3 = new Vec3(-135, -500);
     private arrColumn: Node[] = [];
-    private speedColumn: number = 600;
+    private speedColumn: number = 700;
     private tempColumn: Vec3 = new Vec3();
     private contact: boolean = false;
 
@@ -105,7 +105,11 @@ export class GameController extends Component {
 
     protected onTouchStart(): void {
         this.onClickStart = true;
-        this.gameView.redirectGame();
+        if(this.gameView.IsActioning){
+            this.gameView.redirectActionGame();
+            this.gameView.IsActioning = false;
+        }
+        
     }
 
     protected initActionBall(): void {
@@ -114,7 +118,7 @@ export class GameController extends Component {
 
     protected onActionBall(): void {
         const rigid = this.ball.getComponent(RigidBody2D);
-        rigid.applyForceToCenter(new Vec2(0, -10).multiplyScalar(200), true);
+        rigid.applyForceToCenter(new Vec2(0, -5).multiplyScalar(150), true);
         this.isJumped = false;
     }
 
@@ -138,7 +142,9 @@ export class GameController extends Component {
     protected overGame(): void {
 
         director.pause();
-        this.gameView.redirectResult();
+        if(!this.gameView.IsActioning){
+            this.gameView.redirectActionGame();
+        }
     }
 
     protected onClickSound(): void {
@@ -170,15 +176,15 @@ export class GameController extends Component {
     }
 
     protected update(deltaTime: number) {
-        if(this.ball.getPosition().y < -385) {
+        if(this.ball.getPosition().y < -515) {
             this.overGame();
         }
 
         if (this.isJumped) {
             this.tempPosBall = this.ball.position;
-            this.tempPosBall.y += 400 * deltaTime;
+            this.tempPosBall.y += 550 * deltaTime;
             this.ball.setPosition(this.tempPosBall);
-            this.ball.setRotationFromEuler(0,0,0);
+            // this.ball.setRotationFromEuler(0,0,0);
             this.ball.getComponent(Collider2D).apply();
         }
 

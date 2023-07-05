@@ -1,3 +1,4 @@
+import { UIActionGame } from './UIActionGame';
 import { _decorator, Component, Node } from 'cc';
 const { ccclass, property } = _decorator;
 
@@ -11,24 +12,30 @@ export class GameView extends Component {
     @property({
         type: Node
     })
-    private uIGame: Node;
+    private uIActionGame: Node;
 
     @property({
-        type: Node
+        type: UIActionGame
     })
-    private uIResult: Node;
+    private actionGame: UIActionGame;
 
-
-    public redirectGame(): void {
-        this.uIResult.active = false;
-        this.uIStart.active = false;
-        this.uIGame.active = true;
+    
+    private isActioning: boolean = true;
+    public get IsActioning(): boolean {
+        return this.isActioning;
+    }
+    public set IsActioning(value: boolean) {
+        this.isActioning = value;
     }
 
-    public redirectResult(): void {
+    public redirectActionGame(): void {
+        this.uIActionGame.active = true;
         this.uIStart.active = false;
-        this.uIGame.active = false;
-        this.uIResult.active = true;
+
+        this.actionGame.TitleBestScore.active = !this.isActioning;
+        this.actionGame.TitleGameOver.active = !this.isActioning;
+        this.actionGame.BestScore.node.active = !this.isActioning;
+        this.actionGame.BtnRestart.active = !this.isActioning;
     }
 }
 
