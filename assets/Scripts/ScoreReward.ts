@@ -1,14 +1,25 @@
-import { _decorator, Component, Node } from 'cc';
+import { _decorator, Component, Node, Label } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('ScoreReward')
 export class ScoreReward extends Component {
-    start() {
+    @property({
+        type: Label
+    })
+    private labelScoreReward: Label;
 
+    private scoreReward: number = 0;
+    public get ScoreReward(): number {
+        return this.scoreReward;
     }
+    public set ScoreReward(value: number) {
+        this.scoreReward = value;
+    }
+    
 
-    update(deltaTime: number) {
-        
+    public addScoreReward(): void {
+        this.scoreReward++;
+        this.labelScoreReward.string = this.scoreReward.toString();  
     }
 }
 
