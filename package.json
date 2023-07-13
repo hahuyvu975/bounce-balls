@@ -3,5 +3,9 @@
   "uuid": "e6e64216-9dc0-4c3d-b19f-663acd1d4e57",
   "creator": {
     "version": "3.7.2"
+  },
+  "dependencies": {
+    "@onechaintech/gamesdk-dev": "^0.0.11",
+    "uuidv4": "^6.2.13"
   }
 }

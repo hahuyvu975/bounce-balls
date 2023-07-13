@@ -1,11 +1,15 @@
+import { _decorator, Component, Node, AudioClip, input, Input, instantiate, Prefab, Vec3, Collider2D, Contact2DType, RigidBody2D, Vec2, director, Quat, v2, math, Tween, IPhysics2DContact, randomRangeInt, find } from 'cc';
+
+import { AudioController } from './@AudioController';
+import { StoreAPI } from './StoreAPI';
 import { ScoreReward } from './ScoreReward';
 import { GameModel } from './@GameModel';
 import { ScoreColumn } from './ScoreColumn';
 import { GameView } from './@GameView';
-import { _decorator, Component, Node, AudioClip, input, Input, instantiate, Prefab, Vec3, Collider2D, Contact2DType, RigidBody2D, Vec2, director, Quat, v2, math, Tween, IPhysics2DContact, randomRangeInt } from 'cc';
-import { AudioController } from './@AudioController';
-const { ccclass, property } = _decorator;
 
+let matchId: string;
+
+const { ccclass, property } = _decorator;
 @ccclass('GameController')
 export class GameController extends Component {
     @property({
@@ -90,6 +94,7 @@ export class GameController extends Component {
     private tempReward: Vec3 = new Vec3();
     private arrReward: Node[] = [];
     private status: boolean = true;
+    private directionBall: boolean = false;
 
     //Column
     private positonX: Vec3 = new Vec3(-120, -250);
@@ -108,12 +113,35 @@ export class GameController extends Component {
     private tempLine: Vec3 = new Vec3();
 
     private isGameRunning: boolean = true;
+    private endGame: boolean = false;
 
-    protected onLoad(): void {
+
+    //API
+    private gameClient;
+    // private matchId: string;
+
+
+    protected async onLoad(): Promise<void> {
+        director.resume();
         this.initPrefabColumn();
         this.initPrefabLine();
         this.initActionBall();
         this.initListeners();
+
+        let _this = this;
+        let parameters = find("GameClient");
+        let gameClientParams = parameters.getComponent(StoreAPI);
+        this.gameClient = gameClie.ntParams.gameClient;
+
+        // Khi bat dau game
+        await gameClientParams.gameClient.match.startMatch()
+            .then((data) => {
+                this.matchId = data.matchId;
+                console.log(this.matchId)
+            })
+            .catch((error) => console.log(error));
+
+        gameClientParams.matchId = this.matchId;
 
         if (!localStorage.getItem('volume')) {
             localStorage.setItem('volume', '1');
@@ -131,7 +159,6 @@ export class GameController extends Component {
     }
 
     protected start(): void {
-        // this.scoreColumn.showBestScore();
         this.rigidbody = this.ball.getComponent(RigidBody2D);
         const collider = this.ball.getComponent(Collider2D);
         if (collider) {
@@ -141,34 +168,32 @@ export class GameController extends Component {
 
     // va chạm
     protected onBeginContact(sefl: Collider2D, other: Collider2D, contact: IPhysics2DContact): void {
-        if(this.status){
+        if (this.status) {
             this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, 13);
         }
-    
+
         if (localStorage.getItem('volume') === '1') {
             this.onAudioQueue(1);
         }
-        if(other.tag === 3) {
+        // line
+        if (other.tag === 3) {
             this.status = false;
-            console.log('contact line')
-            
             this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(-15, -5);
         }
+        //reward
         if (other.tag === 0) {
-            this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, -20 );
-            console.log('contact reward')
+            this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, -10);
             if (localStorage.getItem('volume') === '1') {
                 this.onAudioQueue(2);
             }
             this.scoreReward.addScoreReward();
             this.contactReward = true;
         }
+        // column
         if (this.onClickStart) {
-
             this.isMovingObject = true;
-            if (other.tag === 1 ) {
+            if (other.tag === 1) {
                 this.scoreColumn.addScoreColumn();
-                
             }
         }
     }
@@ -179,10 +204,13 @@ export class GameController extends Component {
 
     // action start game
     protected onTouchStart(): void {
+
         if (localStorage.getItem('volume') === '1') {
             this.onAudioQueue(0);
         }
+
         this.onClickStart = true;
+        // Thay đổi view
         if (this.gameView.IsActioning) {
             this.gameView.redirectActionGame();
             this.gameView.IsActioning = false;
@@ -190,11 +218,11 @@ export class GameController extends Component {
     }
 
     protected initActionBall(): void {
-        input.on(Input.EventType.TOUCH_START, this.onActionBall, this)
+        input.on(Input.EventType.TOUCH_START, this.onActionBallDown, this)
     }
 
     //  action ball for down
-    protected onActionBall(): void {
+    protected onActionBallDown(): void {
         const force: Vec2 = new Vec2(100, -1050);
         const point: Vec2 = new Vec2(0, 0);
         this.rigidbody.applyForce(force, point, true);
@@ -207,10 +235,11 @@ export class GameController extends Component {
         this.reward1.parent = this.rewardsNode;
         this.arrReward.push(this.reward1);
         this.setPosReward(this.rewardsNode, index);
+        // this.reward1.getComponent(Collider2D).apply();
     }
 
     protected setPosReward(node: Node, index: number): void {
-        node.setPosition(this.arrColumn[index].position.x+7, -30);
+        node.setPosition(this.arrColumn[index].position.x + 7, -30);
         // node.getComponent(Collider2D).apply();
     }
 
@@ -248,21 +277,40 @@ export class GameController extends Component {
         }
     }
 
-    protected overGame(): void {
-        this.isGameRunning = false;
+    protected async overGame(): Promise<void> {
+        director.pause();
+        console.log('over game');
         if (localStorage.getItem('volume') === '1') {
             this.onAudioQueue(3);
         }
+        // Thay đổi view
         if (!this.gameView.IsActioning) {
             this.gameView.redirectActionGame();
         }
+        
+
+        console.log(this.matchId)
+        try {
+            await this.gameClient.match.completeMatch(this.matchId, { score: this.scoreColumn.ScoreColumn });
+            console.log(this.scoreColumn.ScoreColumn);
+            //Thay đổi view
+            if (!this.gameView.IsActioning) {
+                this.gameView.redirectActionGame();
+            }
+        } catch (error) {
+            console.log(error);
+        }
     }
+
+
     protected onClickRestart(): void {
+        console.log('click restart');
         if (localStorage.getItem('volume') === '1') {
             this.onAudioQueue(0);
         }
         director.resume();
         director.loadScene('Game');
+
     }
     protected onClickSound(): void {
         if (!this.onClicked) {
@@ -292,12 +340,13 @@ export class GameController extends Component {
 
 
 
-    protected update(deltaTime: number) {
+    protected async update(deltaTime: number): Promise<void> {
 
-        if(this.status){
+        if (this.status) {
             this.ball.setPosition(-120, this.ball.position.y);
         }
-        
+
+        //
         if (this.contactReward) {
             this.reward1.active = false;
             this.reward1.getComponent(Collider2D).apply();
@@ -306,7 +355,6 @@ export class GameController extends Component {
 
         if (this.isGameRunning) {
             if (this.ball.getPosition().y < -385) {
-                this.rigidbody.linearVelocity = new Vec2(0, -50);
                 this.overGame();
             }
             // moving column and redward
@@ -357,6 +405,7 @@ export class GameController extends Component {
                     element.getComponent(Collider2D).apply();
                 }
             }
+
         }
     }
 }

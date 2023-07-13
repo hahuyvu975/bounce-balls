@@ -14,8 +14,13 @@ export class ScoreColumn extends Component {
     private labelBestScore: Label;
 
     private scoreColumn: number = 0;
-    // private bestScore: number = 0;
-    private arrayScore: number[] = [0];
+    public get ScoreColumn(): number {
+        return this.scoreColumn;
+    }
+    public set ScoreColumn(value: number) {
+        this.scoreColumn = value;
+    }
+    
 
     protected onLoad(): void {
         if(!localStorage.getItem('bestScore')) {
@@ -24,7 +29,6 @@ export class ScoreColumn extends Component {
     }
 
     protected start(): void {
-        // this.showBestScore();
     }
 
     public addScoreColumn(): void {
