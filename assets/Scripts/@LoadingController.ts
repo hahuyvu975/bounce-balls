@@ -7,7 +7,6 @@ const { ccclass, property } = _decorator;
 export class LoadingController extends Component {
     public gameClient;
 
-    
     public async start() : Promise<void> {
             let parameters = find("GameClient");
             
@@ -25,9 +24,5 @@ export class LoadingController extends Component {
                 director.addPersistRootNode(parameters);
             }
         director.loadScene("Game");
-    }
-
-    update(deltaTime: number) {
-        
     }
 }
