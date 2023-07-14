@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, AudioClip, input, Input, instantiate, Prefab, Vec3, Collider2D, Contact2DType, RigidBody2D, Vec2, director, Quat, v2, math, Tween, IPhysics2DContact, randomRangeInt, find } from 'cc';
+import { _decorator, Component, Node, AudioClip, input, Input, instantiate, Prefab, Vec3, Collider2D, Contact2DType, RigidBody2D, Vec2, director, Quat, v2, math, Tween, IPhysics2DContact, randomRangeInt, find, AudioSource } from 'cc';
 
 import { AudioController } from './@AudioController';
 import { StoreAPI } from './StoreAPI';
@@ -84,10 +84,13 @@ export class GameController extends Component {
 
     private reward1: Node;
 
+    @property({ type: AudioSource })
+    private bgAudio: AudioSource;
+
     //ControlGame
     private onClicked: boolean = false;
     private onClickStart: boolean = false;
-
+    private endGame: boolean = false;
     private rigidbody: RigidBody2D;
 
     // Ball
@@ -115,10 +118,10 @@ export class GameController extends Component {
     // Moving objects (Column, Reward, Line)
     private isGameRunning: boolean = true;
 
-     //API
-     private gameClient;
-     private matchId: string;
- 
+    //API
+    private gameClient;
+    private matchId: string;
+
 
     protected async onLoad(): Promise<void> {
         let _this = this;
@@ -126,19 +129,22 @@ export class GameController extends Component {
         let parameters = find("GameClient");
         let gameClientParams = parameters.getComponent(StoreAPI);
         this.gameClient = gameClientParams.gameClient;
-        
+
         // Khi bat dau game
         await gameClientParams.gameClient.match.startMatch()
             .then((data) => {
-                _this.matchId = data.matchId;})
+                _this.matchId = data.matchId;
+            })
             .catch((error) => console.log(error));
-                
+
         this.ball.active = true;
 
+        this.bgAudio.play();
         this.initPrefabColumn();
         this.initPrefabLine();
         this.initActionBall();
         this.initListeners();
+
         if (!localStorage.getItem('volume')) {
             localStorage.setItem('volume', '1');
         }
@@ -194,12 +200,8 @@ export class GameController extends Component {
             if (other.tag === 1) {
                 this.scoreColumn.addScoreColumn();
                 this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, 13);
-
             }
-
-
         }
-
     }
 
     protected initListeners(): void {
@@ -282,21 +284,19 @@ export class GameController extends Component {
     }
 
     protected async overGame(): Promise<void> {
-
-        let _this = this;
+        console.log('overGame');
         if (localStorage.getItem('volume') === '1') {
             this.onAudioQueue(3);
         }
+        let _this = this;
         await this.gameClient.match
-            .completeMatch(_this.matchId, { score: this.scoreColumn.ScoreColumn})
-            .then((data) => {})
+            .completeMatch(_this.matchId, { score: this.scoreColumn.ScoreColumn })
+            .then((data) => { })
             .catch((error) => console.log(error));
 
 
         this.isGameRunning = false;
-        if (localStorage.getItem('volume') === '1') {
-            this.onAudioQueue(3);
-        }
+        
         // Thay đổi view
         if (!this.gameView.IsActioning) {
             this.gameView.redirectActionGame();
@@ -305,6 +305,9 @@ export class GameController extends Component {
 
 
     protected onClickRestart(): void {
+        if (localStorage.getItem('volume') === '1') {
+            this.onAudioQueue(0);
+        }
         director.loadScene('Game');
 
     }
@@ -334,25 +337,25 @@ export class GameController extends Component {
         this.audioCtrl.AudioSource.volume = index;
     }
 
-
-
     protected async update(deltaTime: number): Promise<void> {
         if (this.posBallCenter) {
             this.ball.setPosition(-120, this.ball.position.y);
         }
 
-        //
         if (this.contactReward) {
             this.reward1.active = false;
             this.reward1.getComponent(Collider2D).apply();
             this.contactReward = false;
         }
 
-        if (this.isGameRunning) {
-            if (this.ball.getPosition().y < -385) {
-                this.ball.getComponent(RigidBody2D).enabled = false;
-                this.overGame();
-            }
+        if (!this.endGame && this.ball.getPosition().y < -385) {
+            this.ball.getComponent(RigidBody2D).enabled = false;
+            this.overGame();
+            this.endGame = true;
+        }
+
+        if (!this.endGame && this.isGameRunning) {
+
             // moving column and redward
             if (this.isMovingObject) {
                 // move column
@@ -401,7 +404,6 @@ export class GameController extends Component {
                     element.getComponent(Collider2D).apply();
                 }
             }
-
         }
     }
 }
