@@ -171,7 +171,7 @@ export class GameController extends Component {
     // va chạm
     protected onBeginContact(sefl: Collider2D, other: Collider2D, contact: IPhysics2DContact): void {
         if (this.status) {
-            this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, 13);
+            this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, 22);
         }
 
         if (localStorage.getItem('volume') === '1') {
@@ -199,7 +199,7 @@ export class GameController extends Component {
             this.isMovingObject = true;
             if (other.tag === 1) {
                 this.scoreColumn.addScoreColumn();
-                this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, 13);
+                this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, 22);
             }
         }
     }
@@ -229,9 +229,7 @@ export class GameController extends Component {
 
     //  action ball for down
     protected onActionBallDown(): void {
-        const force: Vec2 = new Vec2(100, -1050);
-        const point: Vec2 = new Vec2(0, 0);
-        this.rigidbody.applyForce(force, point, true);
+        this.ball.getComponent(RigidBody2D).linearVelocity = new Vec2(0, -22);
         this.ball.getComponent(Collider2D).apply();
     }
 
