@@ -13,7 +13,7 @@ export class LoadingController extends Component {
             if (parameters === null) {
                 let parameters = new Node("GameClient");
                 if (this.gameClient === undefined) {
-                    this.gameClient = new GameClient("64abd456515d9733f0383f69", "827ca7aa-18fb-4c7f-922e-62573e661ef7", window.parent, {dev: false });
+                    this.gameClient = new GameClient("648050d63399e7ec8a1fa93c", "b6422f4a-1c30-44be-823d-32b43e924da1", window.parent, {dev: false });
                     await this.gameClient.initAsync()
                     .then(() => {console.log('123')})
                     .catch((err) => console.log(err));
